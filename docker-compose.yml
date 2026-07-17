@@ -5,11 +5,10 @@ services:
   new-api:
     image: 192.168.180.146:8082/humen-token-gateway/new-api:${IMAGE_TAG:-prod}
     pull_policy: always
-    container_name: new-api
     restart: always
     command: --log-dir /app/logs
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "${APP_PORT:-3080}:3000"
     volumes:
       - ./data:/data
       - ./logs:/app/logs
@@ -45,7 +44,6 @@ services:
   redis:
     image: ${REDIS_IMAGE:-192.168.180.146:8082/humen-token-gateway/redis:7-alpine}
     pull_policy: always
-    container_name: redis
     restart: always
     command:
       - redis-server
@@ -70,14 +68,13 @@ services:
   postgres:
     image: ${POSTGRES_IMAGE:-192.168.180.146:8082/humen-token-gateway/postgres:15-alpine}
     pull_policy: always
-    container_name: postgres
     restart: always
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123456}
       POSTGRES_DB: new-api
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
     networks:
       - new-api-network
     healthcheck:
@@ -87,7 +84,6 @@ services:
       retries: 5
 
 volumes:
-  pg_data:
   redis_data:
 
 networks:
