@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/types"
 
@@ -63,6 +64,7 @@ type Log struct {
 	Type              int    `json:"type" gorm:"index:idx_created_at_type"`
 	Content           string `json:"content"`
 	Username          string `json:"username" gorm:"index;index:index_username_model_name,priority:2;default:''"`
+	EmployeeNo        string `json:"employee_no,omitempty" gorm:"type:varchar(64);index;default:''"`
 	TokenName         string `json:"token_name" gorm:"index;default:''"`
 	ModelName         string `json:"model_name" gorm:"index;index:index_username_model_name,priority:1;default:''"`
 	Quota             int    `json:"quota" gorm:"default:0"`
@@ -198,7 +200,7 @@ func buildOpField(action string, params map[string]interface{}) map[string]inter
 
 // RecordLoginLog 记录用户登录成功的审计日志（type=LogTypeLogin）。
 // username 由调用方传入（登录流程已持有用户对象），避免额外的数据库查询。
-// content 为英文兜底文本（用于导出/经典前端）；action+params 供前端本地化渲染。
+// content 为英文兜底文本（用于导出）；action+params 供前端本地化渲染。
 // extra 可携带 login_method、user_agent 等附加信息（普通用户可见）。
 func RecordLoginLog(userId int, username string, content string, ip string, action string, params map[string]interface{}, extra map[string]interface{}) {
 	other := map[string]interface{}{}
@@ -222,7 +224,7 @@ func RecordLoginLog(userId int, username string, content string, ip string, acti
 
 // RecordOperationAuditLog 记录管理/高危操作审计日志（type=LogTypeManage）。
 // logUserId 为日志归属者，管理审计日志应归属实际操作者；目标资源/用户放入
-// action params。username 内部按 logUserId 查询。content 为英文兜底文本（导出/经典前端用）。
+// action params。username 内部按 logUserId 查询。content 为英文兜底文本（导出用）。
 // action+params 写入 Other.op，供前端本地化渲染（普通用户可见，不含敏感信息）。
 // adminInfo 存放操作者身份（写入 Other.admin_info，普通用户查询时剥离）；
 // auditInfo 存放路由/方法/结果等中间件兜底信息（写入 Other.audit_info，普通用户查询时剥离）。
@@ -296,6 +298,7 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 	log := &Log{
 		UserId:           userId,
 		Username:         username,
+		EmployeeNo:       common.GetContextKeyString(c, constant.ContextKeyEmployeeNo),
 		CreatedAt:        common.GetTimestamp(),
 		Type:             LogTypeError,
 		Content:          content,
@@ -360,6 +363,7 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 	log := &Log{
 		UserId:           userId,
 		Username:         username,
+		EmployeeNo:       common.GetContextKeyString(c, constant.ContextKeyEmployeeNo),
 		CreatedAt:        createdAt,
 		Type:             LogTypeConsume,
 		Content:          params.Content,
@@ -404,16 +408,17 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 }
 
 type RecordTaskBillingLogParams struct {
-	UserId    int
-	LogType   int
-	Content   string
-	ChannelId int
-	ModelName string
-	Quota     int
-	TokenId   int
-	Group     string
-	Other     map[string]interface{}
-	NodeName  string // 任务发起节点；为空时回退当前节点
+	UserId     int
+	LogType    int
+	Content    string
+	ChannelId  int
+	ModelName  string
+	Quota      int
+	TokenId    int
+	Group      string
+	Other      map[string]interface{}
+	NodeName   string // 任务发起节点；为空时回退当前节点
+	EmployeeNo string
 }
 
 func RecordTaskBillingLog(params RecordTaskBillingLogParams) {
@@ -429,18 +434,19 @@ func RecordTaskBillingLog(params RecordTaskBillingLogParams) {
 	}
 	createdAt := common.GetTimestamp()
 	log := &Log{
-		UserId:    params.UserId,
-		Username:  username,
-		CreatedAt: createdAt,
-		Type:      params.LogType,
-		Content:   params.Content,
-		TokenName: tokenName,
-		ModelName: params.ModelName,
-		Quota:     params.Quota,
-		ChannelId: params.ChannelId,
-		TokenId:   params.TokenId,
-		Group:     params.Group,
-		Other:     common.MapToJsonStr(params.Other),
+		UserId:     params.UserId,
+		Username:   username,
+		EmployeeNo: params.EmployeeNo,
+		CreatedAt:  createdAt,
+		Type:       params.LogType,
+		Content:    params.Content,
+		TokenName:  tokenName,
+		ModelName:  params.ModelName,
+		Quota:      params.Quota,
+		ChannelId:  params.ChannelId,
+		TokenId:    params.TokenId,
+		Group:      params.Group,
+		Other:      common.MapToJsonStr(params.Other),
 	}
 	err := createLog(log)
 	if err != nil {
@@ -465,7 +471,7 @@ func RecordTaskBillingLog(params RecordTaskBillingLogParams) {
 	}
 }
 
-func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int, group string, requestId string, upstreamRequestId string) (logs []*Log, total int64, err error) {
+func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, employeeNo string, tokenName string, startIdx int, num int, channel int, group string, requestId string, upstreamRequestId string) (logs []*Log, total int64, err error) {
 	var tx *gorm.DB
 	if logType == LogTypeUnknown {
 		tx = LOG_DB
@@ -477,6 +483,9 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 		return nil, 0, err
 	}
 	if tx, err = applyExplicitLogTextFilter(tx, "logs.username", username); err != nil {
+		return nil, 0, err
+	}
+	if tx, err = applyExplicitLogTextFilter(tx, "logs.employee_no", employeeNo); err != nil {
 		return nil, 0, err
 	}
 	if tokenName != "" {
@@ -561,7 +570,7 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 
 const logSearchCountLimit = 10000
 
-func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int, group string, requestId string, upstreamRequestId string) (logs []*Log, total int64, err error) {
+func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, employeeNo string, tokenName string, startIdx int, num int, group string, requestId string, upstreamRequestId string) (logs []*Log, total int64, err error) {
 	var tx *gorm.DB
 	if logType == LogTypeUnknown {
 		tx = LOG_DB.Where("logs.user_id = ?", userId)
@@ -570,6 +579,9 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 	}
 
 	if tx, err = applyExplicitLogTextFilter(tx, "logs.model_name", modelName); err != nil {
+		return nil, 0, err
+	}
+	if tx, err = applyExplicitLogTextFilter(tx, "logs.employee_no", employeeNo); err != nil {
 		return nil, 0, err
 	}
 	if tokenName != "" {
@@ -615,7 +627,7 @@ type Stat struct {
 	Tpm   int `json:"tpm"`
 }
 
-func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int, group string) (stat Stat, err error) {
+func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, employeeNo string, tokenName string, channel int, group string) (stat Stat, err error) {
 	tx := LOG_DB.Table("logs").Select("COALESCE(sum(quota), 0) quota")
 
 	// 为rpm和tpm创建单独的查询
@@ -625,6 +637,12 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 		return stat, err
 	}
 	if rpmTpmQuery, err = applyExplicitLogTextFilter(rpmTpmQuery, "username", username); err != nil {
+		return stat, err
+	}
+	if tx, err = applyExplicitLogTextFilter(tx, "employee_no", employeeNo); err != nil {
+		return stat, err
+	}
+	if rpmTpmQuery, err = applyExplicitLogTextFilter(rpmTpmQuery, "employee_no", employeeNo); err != nil {
 		return stat, err
 	}
 	if tokenName != "" {

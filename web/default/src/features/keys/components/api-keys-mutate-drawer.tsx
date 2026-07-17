@@ -499,6 +499,31 @@ export function ApiKeysMutateDrawer({
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name='require_employee'
+                render={({ field }) => (
+                  <FormItem className={sideDrawerSwitchItemClassName()}>
+                    <div className='flex flex-col gap-0.5'>
+                      <FormLabel className='text-sm'>
+                        {t('Require employee number')}
+                      </FormLabel>
+                      <FormDescription className='text-xs'>
+                        {t(
+                          'Require X-Employee-No on every request made with this API key'
+                        )}
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
             </SideDrawerSection>
 
             <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>

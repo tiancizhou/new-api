@@ -299,6 +299,8 @@ func migrateDB() error {
 		&SystemTaskLock{},
 		&CasbinRule{},
 		&AuthzRole{},
+		&Department{},
+		&Employee{},
 	)
 	if err != nil {
 		return err
@@ -312,7 +314,7 @@ func migrateDB() error {
 			return err
 		}
 	}
-	return nil
+	return DB.Where("key = ?", "theme.frontend").Delete(&Option{}).Error
 }
 
 func migrateDBFast() error {
@@ -351,6 +353,8 @@ func migrateDBFast() error {
 		{&SystemInstance{}, "SystemInstance"},
 		{&SystemTask{}, "SystemTask"},
 		{&SystemTaskLock{}, "SystemTaskLock"},
+		{&Department{}, "Department"},
+		{&Employee{}, "Employee"},
 	}
 	// 动态计算migration数量，确保errChan缓冲区足够大
 	errChan := make(chan error, len(migrations))
@@ -384,6 +388,9 @@ func migrateDBFast() error {
 			return err
 		}
 	}
+	if err := DB.Where("key = ?", "theme.frontend").Delete(&Option{}).Error; err != nil {
+		return err
+	}
 	common.SysLog("database migrated")
 	return nil
 }
@@ -399,6 +406,13 @@ func migrateClickHouseLogDB() error {
 	ttlDays := clickHouseLogTTLDays()
 	if err := LOG_DB.Exec(clickHouseLogCreateTableSQL(ttlDays)).Error; err != nil {
 		return err
+	}
+	for _, statement := range []string{
+		"ALTER TABLE logs ADD COLUMN IF NOT EXISTS employee_no String DEFAULT '' AFTER username",
+	} {
+		if err := LOG_DB.Exec(statement).Error; err != nil {
+			return err
+		}
 	}
 	return syncClickHouseLogTTL(ttlDays)
 }
@@ -435,6 +449,7 @@ CREATE TABLE IF NOT EXISTS logs (
 	type Int32 DEFAULT 0,
 	content String DEFAULT '',
 	username String DEFAULT '',
+	employee_no String DEFAULT '',
 	token_name String DEFAULT '',
 	model_name String DEFAULT '',
 	quota Int32 DEFAULT 0,

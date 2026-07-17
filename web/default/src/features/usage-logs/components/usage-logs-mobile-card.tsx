@@ -345,6 +345,12 @@ function CommonLogsCard<TData>({
         ) : (
           <SummaryField cell={cells.get('user')} />
         )}
+        {rowData?.employee_no && (
+          <SummaryField
+            label={t('Employee Number')}
+            cell={cells.get('employee_no')}
+          />
+        )}
         <SummaryField
           cell={cells.get('token_name')}
           valueClassName='[&_.flex-col]:max-w-none [&_.flex-col>*:not(:first-child)]:text-[11px] [&_.flex-col>*:not(:first-child)]:leading-none'

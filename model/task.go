@@ -105,6 +105,7 @@ type TaskPrivateData struct {
 	SubscriptionId int                 `json:"subscription_id,omitempty"` // 订阅 ID，用于订阅退款
 	TokenId        int                 `json:"token_id,omitempty"`        // 令牌 ID，用于令牌额度退款
 	NodeName       string              `json:"node_name,omitempty"`       // 发起任务的节点名，轮询结算阶段据此归属日志而非最后查询节点
+	EmployeeNo     string              `json:"employee_no,omitempty"`
 	BillingContext *TaskBillingContext `json:"billing_context,omitempty"` // 计费参数快照（用于轮询阶段重新计算）
 }
 
@@ -184,6 +185,9 @@ func InitTask(platform constant.TaskPlatform, relayInfo *commonRelay.RelayInfo) 
 		if relayInfo.OriginModelName != "" {
 			properties.OriginModelName = relayInfo.OriginModelName
 		}
+	}
+	if relayInfo != nil {
+		privateData.EmployeeNo = relayInfo.EmployeeNo
 	}
 
 	// 使用预生成的公开 ID（如果有），否则新生成

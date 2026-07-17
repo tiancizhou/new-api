@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type { ColumnDef } from '@tanstack/react-table'
-import { GitBranch, Sparkles, KeyRound } from 'lucide-react'
+import { GitBranch, Sparkles, KeyRound, UserRound } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -539,6 +539,25 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
       }
     )
   }
+
+  columns.push({
+    accessorKey: 'employee_no',
+    header: t('Employee Number'),
+    cell: function EmployeeCell({ row }) {
+      const { sensitiveVisible } = useUsageLogsContext()
+      const log = row.original
+      if (!log.employee_no) return null
+
+      const displayNo = sensitiveVisible ? log.employee_no : '••••'
+
+      return (
+        <div className='flex max-w-[160px] items-center gap-1.5'>
+          <UserRound className='text-muted-foreground size-4 shrink-0' />
+          <p className='truncate font-mono text-sm'>{displayNo}</p>
+        </div>
+      )
+    },
+  })
 
   columns.push({
     accessorKey: 'token_name',

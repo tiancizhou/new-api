@@ -117,6 +117,7 @@ type RelayInfo struct {
 	ReasoningEffort        string
 	UserSetting            dto.UserSetting
 	UserEmail              string
+	EmployeeNo             string
 	UserQuota              int
 	RelayFormat            types.RelayFormat
 	SendResponseCount      int
@@ -475,6 +476,7 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 		UserGroup:  common.GetContextKeyString(c, constant.ContextKeyUserGroup),
 		UserQuota:  common.GetContextKeyInt(c, constant.ContextKeyUserQuota),
 		UserEmail:  common.GetContextKeyString(c, constant.ContextKeyUserEmail),
+		EmployeeNo: common.GetContextKeyString(c, constant.ContextKeyEmployeeNo),
 
 		OriginModelName: common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
 

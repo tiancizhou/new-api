@@ -12,7 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetRouter(router *gin.Engine, assets ThemeAssets) {
+func SetRouter(router *gin.Engine, assets WebAssets) {
+	registerMdmRoutes(router.Group("/getMdmInfo"))
 	SetApiRouter(router)
 	SetDashboardRouter(router)
 	SetRelayRouter(router)

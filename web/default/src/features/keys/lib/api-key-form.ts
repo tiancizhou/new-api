@@ -22,7 +22,7 @@ import { z } from 'zod'
 import { parseQuotaFromDollars, quotaUnitsToDollars } from '@/lib/format'
 
 import { DEFAULT_GROUP } from '../constants'
-import { type ApiKeyFormData, type ApiKey } from '../types'
+import type { ApiKey, ApiKeyFormData } from '../types'
 
 // ============================================================================
 // Form Schema
@@ -39,6 +39,7 @@ export function getApiKeyFormSchema(t: TFunction) {
       allow_ips: z.string().optional(),
       group: z.string().optional(),
       cross_group_retry: z.boolean().optional(),
+      require_employee: z.boolean(),
       tokenCount: z.number().min(1).optional(),
     })
     .superRefine((data, ctx) => {
@@ -74,6 +75,7 @@ export const API_KEY_FORM_DEFAULT_VALUES: ApiKeyFormValues = {
   allow_ips: '',
   group: DEFAULT_GROUP,
   cross_group_retry: true,
+  require_employee: false,
   tokenCount: 1,
 }
 
@@ -111,6 +113,7 @@ export function transformFormDataToPayload(
     allow_ips: data.allow_ips || '',
     group: data.group || '',
     cross_group_retry: data.group === 'auto' ? !!data.cross_group_retry : false,
+    require_employee: data.require_employee,
   }
 }
 
@@ -136,6 +139,7 @@ export function transformApiKeyToFormDefaults(
     allow_ips: apiKey.allow_ips || '',
     group: apiKey.group || DEFAULT_GROUP,
     cross_group_retry: !!apiKey.cross_group_retry,
+    require_employee: !!apiKey.require_employee,
     tokenCount: 1,
   }
 }

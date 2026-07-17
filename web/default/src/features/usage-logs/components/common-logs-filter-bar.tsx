@@ -85,6 +85,7 @@ function buildSearchSourceKey(values: {
   token?: unknown
   group?: unknown
   username?: unknown
+  employeeNo?: unknown
   requestId?: unknown
   upstreamRequestId?: unknown
   type?: unknown
@@ -97,6 +98,7 @@ function buildSearchSourceKey(values: {
     values.token,
     values.group,
     values.username,
+    values.employeeNo,
     values.requestId,
     values.upstreamRequestId,
     Array.isArray(values.type) ? values.type.join(',') : values.type,
@@ -130,6 +132,7 @@ export function CommonLogsFilterBar<TData>(
       token: searchParams.token,
       group: searchParams.group,
       username: searchParams.username,
+      employeeNo: searchParams.employeeNo,
       requestId: searchParams.requestId,
       upstreamRequestId: searchParams.upstreamRequestId,
       type: searchParams.type,
@@ -144,6 +147,7 @@ export function CommonLogsFilterBar<TData>(
       token: searchParams.token || undefined,
       group: searchParams.group || undefined,
       username: searchParams.username || undefined,
+      employeeNo: searchParams.employeeNo || undefined,
       requestId: searchParams.requestId || undefined,
       upstreamRequestId: searchParams.upstreamRequestId || undefined,
     }
@@ -160,6 +164,7 @@ export function CommonLogsFilterBar<TData>(
     searchParams.token,
     searchParams.group,
     searchParams.username,
+    searchParams.employeeNo,
     searchParams.requestId,
     searchParams.upstreamRequestId,
     searchParams.type,
@@ -236,6 +241,7 @@ export function CommonLogsFilterBar<TData>(
   const hasExpandedFilters =
     !!filters.token ||
     !!filters.username ||
+    !!filters.employeeNo ||
     !!filters.channel ||
     !!filters.requestId ||
     !!filters.upstreamRequestId
@@ -246,6 +252,7 @@ export function CommonLogsFilterBar<TData>(
 
   const expandedFilterCount = [
     filters.token,
+    filters.employeeNo,
     isAdmin ? filters.username : undefined,
     isAdmin ? filters.channel : undefined,
     filters.requestId,
@@ -360,6 +367,15 @@ export function CommonLogsFilterBar<TData>(
   )
   const advancedFilters = (
     <>
+      <LogsFilterField>
+        <LogsFilterInput
+          placeholder={t('Employee Number')}
+          type={sensitiveType}
+          value={filters.employeeNo || ''}
+          onChange={(e) => handleChange('employeeNo', e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+      </LogsFilterField>
       <LogsFilterField>
         <LogsFilterInput
           placeholder={t('Token Name')}

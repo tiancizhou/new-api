@@ -106,7 +106,14 @@ export function useApiKeysColumns(now: number): ColumnDef<ApiKey>[] {
       accessorKey: 'name',
       header: t('Name'),
       cell: ({ row }) => (
-        <span className='font-medium'>{row.getValue('name')}</span>
+        <div className='flex flex-col gap-0.5'>
+          <span className='font-medium'>{row.getValue('name')}</span>
+          {row.original.require_employee && (
+            <span className='text-muted-foreground text-xs'>
+              {t('Employee')}
+            </span>
+          )}
+        </div>
       ),
       size: 180,
       meta: { mobileTitle: true },

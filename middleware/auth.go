@@ -440,8 +440,27 @@ func TokenAuth() func(c *gin.Context) {
 		if err != nil {
 			return
 		}
+		if err = SetupContextForEmployee(c, token); err != nil {
+			return
+		}
 		c.Next()
 	}
+}
+
+func SetupContextForEmployee(c *gin.Context, token *model.Token) error {
+	if token == nil || !token.RequireEmployee {
+		return nil
+	}
+
+	employeeNo := strings.TrimSpace(c.GetHeader(constant.EmployeeNoHeader))
+	if employeeNo == "" || len(employeeNo) > 64 {
+		abortWithOpenAiMessage(c, http.StatusBadRequest,
+			common.TranslateMessage(c, i18n.MsgTokenEmployeeNoRequired))
+		return errors.New("employee number is required")
+	}
+	common.SetContextKey(c, constant.ContextKeyEmployeeNo, employeeNo)
+	c.Request.Header.Del(constant.EmployeeNoHeader)
+	return nil
 }
 
 func SetupContextForToken(c *gin.Context, token *model.Token, parts ...string) error {

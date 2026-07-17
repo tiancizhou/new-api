@@ -2,6 +2,8 @@ package constant
 
 type ContextKey string
 
+const EmployeeNoHeader = "X-Employee-No"
+
 const (
 	ContextKeyTokenCountMeta  ContextKey = "token_count_meta"
 	ContextKeyPromptTokens    ContextKey = "prompt_tokens"
@@ -51,6 +53,7 @@ const (
 	ContextKeyUserGroup   ContextKey = "user_group"
 	ContextKeyUsingGroup  ContextKey = "group"
 	ContextKeyUserName    ContextKey = "username"
+	ContextKeyEmployeeNo  ContextKey = "employee_no"
 
 	ContextKeyLocalCountTokens ContextKey = "local_count_tokens"
 

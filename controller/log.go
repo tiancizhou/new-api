@@ -16,13 +16,14 @@ func GetAllLogs(c *gin.Context) {
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	username := c.Query("username")
+	employeeNo := c.Query("employee_no")
 	tokenName := c.Query("token_name")
 	modelName := c.Query("model_name")
 	channel, _ := strconv.Atoi(c.Query("channel"))
 	group := c.Query("group")
 	requestId := c.Query("request_id")
 	upstreamRequestId := c.Query("upstream_request_id")
-	logs, total, err := model.GetAllLogs(logType, startTimestamp, endTimestamp, modelName, username, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), channel, group, requestId, upstreamRequestId)
+	logs, total, err := model.GetAllLogs(logType, startTimestamp, endTimestamp, modelName, username, employeeNo, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), channel, group, requestId, upstreamRequestId)
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -40,11 +41,12 @@ func GetUserLogs(c *gin.Context) {
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	tokenName := c.Query("token_name")
+	employeeNo := c.Query("employee_no")
 	modelName := c.Query("model_name")
 	group := c.Query("group")
 	requestId := c.Query("request_id")
 	upstreamRequestId := c.Query("upstream_request_id")
-	logs, total, err := model.GetUserLogs(userId, logType, startTimestamp, endTimestamp, modelName, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), group, requestId, upstreamRequestId)
+	logs, total, err := model.GetUserLogs(userId, logType, startTimestamp, endTimestamp, modelName, employeeNo, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), group, requestId, upstreamRequestId)
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -101,10 +103,11 @@ func GetLogsStat(c *gin.Context) {
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	tokenName := c.Query("token_name")
 	username := c.Query("username")
+	employeeNo := c.Query("employee_no")
 	modelName := c.Query("model_name")
 	channel, _ := strconv.Atoi(c.Query("channel"))
 	group := c.Query("group")
-	stat, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, modelName, username, tokenName, channel, group)
+	stat, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, modelName, username, employeeNo, tokenName, channel, group)
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -124,6 +127,7 @@ func GetLogsStat(c *gin.Context) {
 
 func GetLogsSelfStat(c *gin.Context) {
 	username := c.GetString("username")
+	employeeNo := c.Query("employee_no")
 	logType, _ := strconv.Atoi(c.Query("type"))
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
@@ -131,7 +135,7 @@ func GetLogsSelfStat(c *gin.Context) {
 	modelName := c.Query("model_name")
 	channel, _ := strconv.Atoi(c.Query("channel"))
 	group := c.Query("group")
-	quotaNum, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, modelName, username, tokenName, channel, group)
+	quotaNum, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, modelName, username, employeeNo, tokenName, channel, group)
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -146,32 +150,6 @@ func GetLogsSelfStat(c *gin.Context) {
 			"tpm":   quotaNum.Tpm,
 			//"token": tokenNum,
 		},
-	})
-	return
-}
-
-// DeleteHistoryLogs is the legacy synchronous log cleanup endpoint (DELETE /api/log/).
-// It deletes directly instead of going through the async system task. It is kept only
-// for the classic frontend; the default frontend uses POST /api/system-task/log-cleanup.
-// TODO: remove this handler (and its route) once the classic frontend is removed.
-func DeleteHistoryLogs(c *gin.Context) {
-	targetTimestamp, _ := strconv.ParseInt(c.Query("target_timestamp"), 10, 64)
-	if targetTimestamp == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "target timestamp is required",
-		})
-		return
-	}
-	count, err := model.DeleteOldLog(c.Request.Context(), targetTimestamp, 100)
-	if err != nil {
-		common.ApiError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    count,
 	})
 	return
 }
