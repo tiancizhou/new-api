@@ -127,7 +127,7 @@ export function Home() {
       <Features />
       <HowItWorks />
       <CTA isAuthenticated={isAuthenticated} />
-      <Footer />
+      <Footer columns={[]} />
     </PublicLayout>
   )
 }

@@ -39,8 +39,8 @@ export type TopNavLink = {
  *   console: true,
  *   pricing: { enabled: true, requireAuth: false },
  *   rankings: { enabled: true, requireAuth: false },
- *   docs: true,
- *   about: true
+ *   docs: false,
+ *   about: false
  * }
  */
 export function useTopNavLinks(): TopNavLink[] {
