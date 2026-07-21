@@ -627,6 +627,66 @@ type Stat struct {
 	Tpm   int `json:"tpm"`
 }
 
+type EmployeeTokenUsageStat struct {
+	RequestCount     int64 `json:"request_count" gorm:"column:request_count"`
+	Quota            int64 `json:"quota" gorm:"column:quota"`
+	PromptTokens     int64 `json:"prompt_tokens" gorm:"column:prompt_tokens"`
+	CompletionTokens int64 `json:"completion_tokens" gorm:"column:completion_tokens"`
+	TotalTokens      int64 `json:"total_tokens" gorm:"-"`
+}
+
+type EmployeeTokenUsageBucket struct {
+	Label     string                 `json:"label"`
+	StartTime int64                  `json:"start_timestamp"`
+	EndTime   int64                  `json:"end_timestamp"`
+	Usage     EmployeeTokenUsageStat `json:"usage"`
+}
+
+func SumEmployeeTokenUsage(tokenId int, employeeNo string, startTimestamp int64, endTimestamp int64) (EmployeeTokenUsageStat, error) {
+	var stat EmployeeTokenUsageStat
+	tx := LOG_DB.Model(&Log{}).
+		Select(`COUNT(*) AS request_count,
+			COALESCE(SUM(quota), 0) AS quota,
+			COALESCE(SUM(prompt_tokens), 0) AS prompt_tokens,
+			COALESCE(SUM(completion_tokens), 0) AS completion_tokens`).
+		Where("type = ?", LogTypeConsume).
+		Where("token_id = ?", tokenId).
+		Where("employee_no = ?", employeeNo)
+	if startTimestamp > 0 {
+		tx = tx.Where("created_at >= ?", startTimestamp)
+	}
+	if endTimestamp > 0 {
+		tx = tx.Where("created_at < ?", endTimestamp)
+	}
+	if err := tx.Scan(&stat).Error; err != nil {
+		common.SysError("failed to query employee token usage: " + err.Error())
+		return stat, errors.New("查询员工令牌用量失败")
+	}
+	stat.TotalTokens = stat.PromptTokens + stat.CompletionTokens
+	return stat, nil
+}
+
+func GetEmployeeTokenUsageBuckets(tokenId int, employeeNo string, starts []time.Time, end time.Time) ([]EmployeeTokenUsageBucket, error) {
+	buckets := make([]EmployeeTokenUsageBucket, 0, len(starts))
+	for i, start := range starts {
+		bucketEnd := end
+		if i+1 < len(starts) {
+			bucketEnd = starts[i+1]
+		}
+		stat, err := SumEmployeeTokenUsage(tokenId, employeeNo, start.Unix(), bucketEnd.Unix())
+		if err != nil {
+			return nil, err
+		}
+		buckets = append(buckets, EmployeeTokenUsageBucket{
+			Label:     start.Format("2006-01-02"),
+			StartTime: start.Unix(),
+			EndTime:   bucketEnd.Unix(),
+			Usage:     stat,
+		})
+	}
+	return buckets, nil
+}
+
 func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, employeeNo string, tokenName string, channel int, group string) (stat Stat, err error) {
 	tx := LOG_DB.Table("logs").Select("COALESCE(sum(quota), 0) quota")
 

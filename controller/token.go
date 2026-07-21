@@ -5,8 +5,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/i18n"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
@@ -161,6 +163,102 @@ func GetTokenUsage(c *gin.Context) {
 			"model_limits_enabled": token.ModelLimitsEnabled,
 			"expires_at":           expiredAt,
 		},
+	})
+}
+
+type tokenEmployeeUsagePeriod struct {
+	Name        string
+	Start       time.Time
+	End         time.Time
+	WithBuckets bool
+}
+
+func resolveTokenEmployeeUsagePeriod(rawPeriod string, now time.Time) (tokenEmployeeUsagePeriod, bool) {
+	period := strings.ToLower(strings.TrimSpace(rawPeriod))
+	if period == "" {
+		period = "today"
+	}
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	switch period {
+	case "realtime", "real_time", "rt":
+		return tokenEmployeeUsagePeriod{Name: "realtime", Start: now.Add(-60 * time.Second), End: now, WithBuckets: false}, true
+	case "today", "day", "daily":
+		return tokenEmployeeUsagePeriod{Name: "today", Start: today, End: now, WithBuckets: false}, true
+	case "7d", "7day", "7days", "week":
+		return tokenEmployeeUsagePeriod{Name: "7d", Start: today.AddDate(0, 0, -6), End: now, WithBuckets: true}, true
+	case "30d", "30day", "30days":
+		return tokenEmployeeUsagePeriod{Name: "30d", Start: today.AddDate(0, 0, -29), End: now, WithBuckets: true}, true
+	case "month", "current_month":
+		return tokenEmployeeUsagePeriod{Name: "month", Start: time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()), End: now, WithBuckets: true}, true
+	default:
+		return tokenEmployeeUsagePeriod{}, false
+	}
+}
+
+func buildDailyBucketStarts(start time.Time, end time.Time) []time.Time {
+	first := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location())
+	if first.Before(start) {
+		first = first.AddDate(0, 0, 1)
+	}
+	if first.After(start) {
+		first = first.AddDate(0, 0, -1)
+	}
+	starts := make([]time.Time, 0, 32)
+	for cursor := first; cursor.Before(end); cursor = cursor.AddDate(0, 0, 1) {
+		starts = append(starts, cursor)
+	}
+	return starts
+}
+
+func GetTokenEmployeeUsage(c *gin.Context) {
+	tokenId := c.GetInt("token_id")
+	if tokenId == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"message": "无效的令牌",
+		})
+		return
+	}
+
+	employeeNo := strings.TrimSpace(c.Query("employee_no"))
+	if employeeNo == "" {
+		employeeNo = strings.TrimSpace(c.GetHeader(constant.EmployeeNoHeader))
+	}
+	if employeeNo == "" || len(employeeNo) > 64 {
+		common.ApiErrorMsg(c, "employee_no is required and must be no more than 64 characters")
+		return
+	}
+
+	period, ok := resolveTokenEmployeeUsagePeriod(c.DefaultQuery("period", c.Query("range")), time.Now())
+	if !ok {
+		common.ApiErrorMsg(c, "invalid period, supported values: realtime, today, 7d, 30d, month")
+		return
+	}
+
+	summary, err := model.SumEmployeeTokenUsage(tokenId, employeeNo, period.Start.Unix(), period.End.Unix())
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
+	buckets := make([]model.EmployeeTokenUsageBucket, 0)
+	if period.WithBuckets {
+		buckets, err = model.GetEmployeeTokenUsageBuckets(tokenId, employeeNo, buildDailyBucketStarts(period.Start, period.End), period.End)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+	}
+
+	common.ApiSuccess(c, gin.H{
+		"object":          "employee_token_usage",
+		"token_id":        tokenId,
+		"employee_no":     employeeNo,
+		"period":          period.Name,
+		"start_timestamp": period.Start.Unix(),
+		"end_timestamp":   period.End.Unix(),
+		"summary":         summary,
+		"buckets":         buckets,
 	})
 }
 

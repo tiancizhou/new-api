@@ -1,0 +1,16 @@
+# Local full-stack image test.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+#
+# This keeps the normal compose ports, database, redis, and volumes, but builds
+# the new-api application image from the local source tree instead of pulling it
+# from the private registry.
+
+services:
+  new-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: humen-token-gateway/new-api:local
+    pull_policy: build
