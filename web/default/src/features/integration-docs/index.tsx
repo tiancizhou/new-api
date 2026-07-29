@@ -47,11 +47,12 @@ const responseExample = `{
     "token_id": 12,
     "employee_no": "zt64003",
     "period": "7d",
+    "currency": "USD",
     "start_timestamp": 1784563200,
     "end_timestamp": 1785123600,
     "summary": {
       "request_count": 18,
-      "quota": 1260,
+      "quota": 0.00252,
       "prompt_tokens": 3200,
       "completion_tokens": 1800,
       "total_tokens": 5000
@@ -63,7 +64,7 @@ const responseExample = `{
         "end_timestamp": 1784649600,
         "usage": {
           "request_count": 3,
-          "quota": 260,
+          "quota": 0.00052,
           "prompt_tokens": 800,
           "completion_tokens": 420,
           "total_tokens": 1220
@@ -119,7 +120,7 @@ export function IntegrationDocs() {
     },
     {
       field: 'quota',
-      description: t('Quota charged by this key for the employee.'),
+      description: t('Amount consumed by the employee under this key, in the response currency.'),
     },
     {
       field: 'prompt_tokens',

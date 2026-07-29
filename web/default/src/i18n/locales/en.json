@@ -346,6 +346,7 @@
     "Always matches (default tier).": "Always matches (default tier).",
     "Amount": "Amount",
     "Amount cannot be changed when editing.": "Amount cannot be changed when editing.",
+    "Amount consumed by the employee under this key, in the response currency.": "Amount consumed by the employee under this key, in the response currency.",
     "Amount discount": "Amount discount",
     "Amount Due": "Amount Due",
     "Amount must be a whole number": "Amount must be a whole number",

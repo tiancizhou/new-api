@@ -346,6 +346,7 @@
     "Always matches (default tier).": "Всегда совпадает (уровень по умолчанию).",
     "Amount": "Сумма",
     "Amount cannot be changed when editing.": "Количество нельзя изменить при редактировании.",
+    "Amount consumed by the employee under this key, in the response currency.": "Сумма, израсходованная сотрудником по этому ключу, в валюте ответа.",
     "Amount discount": "Скидка на сумму",
     "Amount Due": "Сумма к оплате",
     "Amount must be a whole number": "Сумма должна быть целым числом",

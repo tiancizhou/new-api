@@ -346,6 +346,7 @@
     "Always matches (default tier).": "Luôn khớp (bậc mặc định).",
     "Amount": "Số lượng",
     "Amount cannot be changed when editing.": "Số tiền không thể thay đổi khi chỉnh sửa.",
+    "Amount consumed by the employee under this key, in the response currency.": "Số tiền nhân viên đã sử dụng với khóa này, theo loại tiền tệ trong phản hồi.",
     "Amount discount": "Số tiền giảm giá",
     "Amount Due": "Số tiền cần thanh toán",
     "Amount must be a whole number": "Số tiền phải là số nguyên",

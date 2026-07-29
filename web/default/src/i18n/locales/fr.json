@@ -346,6 +346,7 @@
     "Always matches (default tier).": "Toujours appliqué (palier par défaut).",
     "Amount": "Montant",
     "Amount cannot be changed when editing.": "Le montant ne peut pas être modifié lors de la modification.",
+    "Amount consumed by the employee under this key, in the response currency.": "Montant consommé par l'employé avec cette clé, dans la devise de la réponse.",
     "Amount discount": "Remise sur le montant",
     "Amount Due": "Montant dû",
     "Amount must be a whole number": "Le montant doit être un nombre entier",

@@ -346,6 +346,7 @@
     "Always matches (default tier).": "始终匹配（默认档位）。",
     "Amount": "金额",
     "Amount cannot be changed when editing.": "编辑时无法更改数量。",
+    "Amount consumed by the employee under this key, in the response currency.": "该员工在此 Key 下消耗的金额，币种以响应中的 currency 为准。",
     "Amount discount": "金额折扣",
     "Amount Due": "应付金额",
     "Amount must be a whole number": "金额必须为整数",

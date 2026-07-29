@@ -173,6 +173,33 @@ type tokenEmployeeUsagePeriod struct {
 	WithBuckets bool
 }
 
+// employeeTokenUsageResponse exposes the billable amount rather than the
+// internal quota unit used by the gateway.
+type employeeTokenUsageResponse struct {
+	RequestCount     int64   `json:"request_count"`
+	Quota            float64 `json:"quota"`
+	PromptTokens     int64   `json:"prompt_tokens"`
+	CompletionTokens int64   `json:"completion_tokens"`
+	TotalTokens      int64   `json:"total_tokens"`
+}
+
+type employeeTokenUsageBucketResponse struct {
+	Label     string                     `json:"label"`
+	StartTime int64                      `json:"start_timestamp"`
+	EndTime   int64                      `json:"end_timestamp"`
+	Usage     employeeTokenUsageResponse `json:"usage"`
+}
+
+func newEmployeeTokenUsageResponse(stat model.EmployeeTokenUsageStat) employeeTokenUsageResponse {
+	return employeeTokenUsageResponse{
+		RequestCount:     stat.RequestCount,
+		Quota:            float64(stat.Quota) / common.QuotaPerUnit,
+		PromptTokens:     stat.PromptTokens,
+		CompletionTokens: stat.CompletionTokens,
+		TotalTokens:      stat.TotalTokens,
+	}
+}
+
 func resolveTokenEmployeeUsagePeriod(rawPeriod string, now time.Time) (tokenEmployeeUsagePeriod, bool) {
 	period := strings.ToLower(strings.TrimSpace(rawPeriod))
 	if period == "" {
@@ -241,12 +268,20 @@ func GetTokenEmployeeUsage(c *gin.Context) {
 		return
 	}
 
-	buckets := make([]model.EmployeeTokenUsageBucket, 0)
+	buckets := make([]employeeTokenUsageBucketResponse, 0)
 	if period.WithBuckets {
-		buckets, err = model.GetEmployeeTokenUsageBuckets(tokenId, employeeNo, buildDailyBucketStarts(period.Start, period.End), period.End)
+		rawBuckets, err := model.GetEmployeeTokenUsageBuckets(tokenId, employeeNo, buildDailyBucketStarts(period.Start, period.End), period.End)
 		if err != nil {
 			common.ApiError(c, err)
 			return
+		}
+		for _, bucket := range rawBuckets {
+			buckets = append(buckets, employeeTokenUsageBucketResponse{
+				Label:     bucket.Label,
+				StartTime: bucket.StartTime,
+				EndTime:   bucket.EndTime,
+				Usage:     newEmployeeTokenUsageResponse(bucket.Usage),
+			})
 		}
 	}
 
@@ -255,9 +290,10 @@ func GetTokenEmployeeUsage(c *gin.Context) {
 		"token_id":        tokenId,
 		"employee_no":     employeeNo,
 		"period":          period.Name,
+		"currency":        "USD",
 		"start_timestamp": period.Start.Unix(),
 		"end_timestamp":   period.End.Unix(),
-		"summary":         summary,
+		"summary":         newEmployeeTokenUsageResponse(summary),
 		"buckets":         buckets,
 	})
 }

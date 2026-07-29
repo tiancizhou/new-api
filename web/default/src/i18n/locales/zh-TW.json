@@ -346,6 +346,7 @@
     "Always matches (default tier).": "始終匹配（預設檔位）。",
     "Amount": "金額",
     "Amount cannot be changed when editing.": "編輯時無法更改數量。",
+    "Amount consumed by the employee under this key, in the response currency.": "該員工在此 Key 下消耗的金額，幣別以回應中的 currency 為準。",
     "Amount discount": "金額折扣",
     "Amount Due": "應付金額",
     "Amount must be a whole number": "金額必須為整數",
