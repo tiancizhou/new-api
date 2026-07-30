@@ -16,7 +16,7 @@ func SetApiRouter(router *gin.Engine) {
 	apiRouter.Use(middleware.RouteTag("api"))
 	apiRouter.Use(gzip.Gzip(gzip.DefaultCompression))
 	apiRouter.Use(middleware.BodyStorageCleanup()) // 清理请求体存储
-	apiRouter.Use(middleware.GlobalAPIRateLimit())
+	apiRouter.Use(middleware.GlobalAPIRateLimit("/api/usage/token/employee"))
 	anonymousRequestBodyLimit := middleware.AnonymousRequestBodyLimit()
 	{
 		apiRouter.GET("/setup", controller.GetSetup)
@@ -252,13 +252,13 @@ func SetApiRouter(router *gin.Engine) {
 		}
 
 		usageRoute := apiRouter.Group("/usage")
-		usageRoute.Use(middleware.CORS(), middleware.CriticalRateLimit())
+		usageRoute.Use(middleware.CORS())
 		{
 			tokenUsageRoute := usageRoute.Group("/token")
 			tokenUsageRoute.Use(middleware.TokenAuthReadOnly())
 			{
 				tokenUsageRoute.GET("/", controller.GetTokenUsage)
-				tokenUsageRoute.GET("/employee", controller.GetTokenEmployeeUsage)
+				tokenUsageRoute.GET("/employee", middleware.EmployeeUsageRateLimit(), controller.GetTokenEmployeeUsage)
 			}
 		}
 

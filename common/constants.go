@@ -206,6 +206,10 @@ var (
 	CriticalRateLimitNum            = 20
 	CriticalRateLimitDuration int64 = 20 * 60
 
+	EmployeeUsageRateLimitEnable   bool
+	EmployeeUsageRateLimitNum            = 1000
+	EmployeeUsageRateLimitDuration int64 = 60
+
 	UploadRateLimitNum            = 10
 	UploadRateLimitDuration int64 = 60
 

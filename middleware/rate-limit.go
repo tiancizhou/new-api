@@ -94,11 +94,20 @@ func GlobalWebRateLimit() func(c *gin.Context) {
 	return defNext
 }
 
-func GlobalAPIRateLimit() func(c *gin.Context) {
-	if common.GlobalApiRateLimitEnable {
-		return rateLimitFactory(common.GlobalApiRateLimitNum, common.GlobalApiRateLimitDuration, "GA")
+func GlobalAPIRateLimit(excludedPaths ...string) func(c *gin.Context) {
+	if !common.GlobalApiRateLimitEnable {
+		return defNext
 	}
-	return defNext
+	rateLimit := rateLimitFactory(common.GlobalApiRateLimitNum, common.GlobalApiRateLimitDuration, "GA")
+	return func(c *gin.Context) {
+		for _, path := range excludedPaths {
+			if c.Request.URL.Path == path {
+				c.Next()
+				return
+			}
+		}
+		rateLimit(c)
+	}
 }
 
 func CriticalRateLimit() func(c *gin.Context) {
@@ -202,4 +211,48 @@ func SearchRateLimit() func(c *gin.Context) {
 		return defNext
 	}
 	return userRateLimitFactory(common.SearchRateLimitNum, common.SearchRateLimitDuration, "SR")
+}
+
+// EmployeeUsageRateLimit limits usage reporting calls by authenticated API key.
+// It must be registered after TokenAuthReadOnly, which provides token_id.
+func EmployeeUsageRateLimit() func(c *gin.Context) {
+	if !common.EmployeeUsageRateLimitEnable {
+		return defNext
+	}
+	return tokenRateLimitFactory(
+		common.EmployeeUsageRateLimitNum,
+		common.EmployeeUsageRateLimitDuration,
+		"EU",
+	)
+}
+
+func tokenRateLimitFactory(maxRequestNum int, duration int64, mark string) func(c *gin.Context) {
+	if common.RedisEnabled {
+		return func(c *gin.Context) {
+			tokenID := c.GetInt("token_id")
+			if tokenID == 0 {
+				c.Status(http.StatusUnauthorized)
+				c.Abort()
+				return
+			}
+			key := fmt.Sprintf("rateLimit:%s:token:%d", mark, tokenID)
+			userRedisRateLimiter(c, maxRequestNum, duration, key)
+		}
+	}
+
+	inMemoryRateLimiter.Init(common.RateLimitKeyExpirationDuration)
+	return func(c *gin.Context) {
+		tokenID := c.GetInt("token_id")
+		if tokenID == 0 {
+			c.Status(http.StatusUnauthorized)
+			c.Abort()
+			return
+		}
+		key := fmt.Sprintf("%s:token:%d", mark, tokenID)
+		if !inMemoryRateLimiter.Request(key, maxRequestNum, duration) {
+			c.Status(http.StatusTooManyRequests)
+			c.Abort()
+			return
+		}
+	}
 }
